@@ -1,0 +1,27 @@
+
+@model FlashcardsPlatformFull.Models.Flashcard
+@{
+  ViewData["Title"] = "Random Card";
+}
+<h2>Random Card</h2>
+<div class="card shadow-sm p-4">
+  <div class="text-muted small">@Model.Deck.Name</div>
+  <h4>@Model.Question</h4>
+  <hr/>
+  <p>@Model.Answer</p>
+
+  @if (!string.IsNullOrWhiteSpace(Model.ImagePath))
+  {
+    <img class="img-fluid rounded" style="max-height:240px;" src="@Model.ImagePath" />
+  }
+  @if (!string.IsNullOrWhiteSpace(Model.AudioPath))
+  {
+    <audio class="mt-2 w-100" controls>
+      <source src="@Model.AudioPath" />
+    </audio>
+  }
+</div>
+<div class="mt-3 d-flex gap-2">
+  <a class="btn btn-primary" asp-action="Random" asp-route-deckId="@Model.DeckId">Another</a>
+  <a class="btn btn-outline-secondary" asp-controller="Decks" asp-action="Details" asp-route-id="@Model.DeckId">Back</a>
+</div>

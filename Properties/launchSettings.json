@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "FlashcardsPlatformFull": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:19468;http://localhost:19469"
+    }
+  }
+}

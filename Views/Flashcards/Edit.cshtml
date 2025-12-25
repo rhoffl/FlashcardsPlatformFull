@@ -1,0 +1,53 @@
+
+@model FlashcardsPlatformFull.Models.Flashcard
+@{
+  ViewData["Title"] = "Edit Card";
+}
+<h2>Edit Card</h2>
+
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" asp-for="Id"/>
+  <input type="hidden" asp-for="DeckId"/>
+  <div class="mb-3">
+    <label class="form-label">Question</label>
+    <input class="form-control" asp-for="Question"/>
+    <span class="text-danger" asp-validation-for="Question"></span>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Answer</label>
+    <textarea class="form-control" asp-for="Answer" rows="4"></textarea>
+    <span class="text-danger" asp-validation-for="Answer"></span>
+  </div>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Category</label>
+      <input class="form-control" asp-for="Category"/>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Tags</label>
+      <input class="form-control" asp-for="Tags"/>
+    </div>
+  </div>
+
+  <div class="mb-2 small text-muted">
+    Current media:
+    @if (!string.IsNullOrWhiteSpace(Model.ImagePath)) { <span>Image ✓ </span> } else { <span>Image - </span> }
+    @if (!string.IsNullOrWhiteSpace(Model.AudioPath)) { <span>Audio ✓</span> } else { <span>Audio -</span> }
+  </div>
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Replace Image (optional)</label>
+      <input class="form-control" type="file" name="imageFile" accept="image/*"/>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Replace Audio (optional)</label>
+      <input class="form-control" type="file" name="audioFile" accept="audio/*"/>
+    </div>
+  </div>
+
+  <button class="btn btn-primary">Update</button>
+  <a class="btn btn-secondary" asp-action="Index" asp-route-deckId="@Model.DeckId">Cancel</a>
+</form>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

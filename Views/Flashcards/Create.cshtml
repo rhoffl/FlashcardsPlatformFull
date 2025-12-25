@@ -1,0 +1,46 @@
+
+@model FlashcardsPlatformFull.Models.Flashcard
+@{
+  ViewData["Title"] = "Add Card";
+  var deck = (FlashcardsPlatformFull.Models.Deck)ViewData["Deck"]!;
+}
+<h2>Add Card</h2>
+<div class="text-muted mb-3">Deck: <a asp-controller="Decks" asp-action="Details" asp-route-id="@deck.Id">@deck.Name</a></div>
+
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" asp-for="DeckId"/>
+  <div class="mb-3">
+    <label class="form-label">Question</label>
+    <input class="form-control" asp-for="Question"/>
+    <span class="text-danger" asp-validation-for="Question"></span>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Answer</label>
+    <textarea class="form-control" asp-for="Answer" rows="4"></textarea>
+    <span class="text-danger" asp-validation-for="Answer"></span>
+  </div>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Category</label>
+      <input class="form-control" asp-for="Category" placeholder="e.g. Core Concepts"/>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Tags</label>
+      <input class="form-control" asp-for="Tags" placeholder="comma,separated"/>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Image (optional)</label>
+      <input class="form-control" type="file" name="imageFile" accept="image/*"/>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Audio (optional)</label>
+      <input class="form-control" type="file" name="audioFile" accept="audio/*"/>
+    </div>
+  </div>
+  <button class="btn btn-primary">Save</button>
+  <a class="btn btn-secondary" asp-controller="Decks" asp-action="Details" asp-route-id="@deck.Id">Cancel</a>
+</form>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

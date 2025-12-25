@@ -1,0 +1,22 @@
+
+@{
+  ViewData["Title"] = "Import JSON";
+  var deckId = (int)ViewData["DeckId"]!;
+}
+<h2>Import Flashcards (JSON)</h2>
+<p class="text-muted">Upload a JSON array with objects containing: question, answer, category, tags.</p>
+
+@if (ViewData["Error"] != null)
+{
+  <div class="alert alert-danger">@ViewData["Error"]</div>
+}
+
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="deckId" value="@deckId" />
+  <div class="mb-3">
+    <label class="form-label">JSON File</label>
+    <input class="form-control" type="file" name="file" accept=".json,application/json"/>
+  </div>
+  <button class="btn btn-primary">Import</button>
+  <a class="btn btn-secondary" asp-controller="Decks" asp-action="Details" asp-route-id="@deckId">Cancel</a>
+</form>
