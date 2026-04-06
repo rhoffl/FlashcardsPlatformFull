@@ -1,7 +1,7 @@
-
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FlashcardsPlatformFull.Data;
@@ -14,11 +14,16 @@ public class FlashcardsController : Controller
 {
     private readonly FlashcardsDbContext _db;
     private readonly IWebHostEnvironment _env;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public FlashcardsController(FlashcardsDbContext db, IWebHostEnvironment env)
+    public FlashcardsController(
+        FlashcardsDbContext db,
+        IWebHostEnvironment env,
+        UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _env = env;
+        _userManager = userManager;
     }
 
     public async Task<IActionResult> Index(int deckId)
@@ -35,22 +40,23 @@ public class FlashcardsController : Controller
         return View(cards);
     }
 
+    [Authorize(Policy = "ReadOnlyAccess")]
     public async Task<IActionResult> Study(int deckId)
     {
         var deck = await _db.Decks.FindAsync(deckId);
         if (deck == null) return NotFound();
+
         ViewData["Deck"] = deck;
         return View();
     }
 
-    [Authorize]
+    [Authorize(Policy = "ReadOnlyAccess")]
     [HttpGet]
     public async Task<IActionResult> DueJson(int deckId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null) return Unauthorized();
 
-        // Due cards are cards whose progress is due OR cards never studied by user
         var now = DateTime.UtcNow;
 
         var due = await _db.Flashcards
@@ -80,7 +86,7 @@ public class FlashcardsController : Controller
         return Json(result);
     }
 
-    [Authorize]
+    [Authorize(Policy = "ReadOnlyAccess")]
     [HttpPost]
     public async Task<IActionResult> Review(int deckId, int id, int grade)
     {
@@ -95,17 +101,22 @@ public class FlashcardsController : Controller
                 UserId = userId,
                 FlashcardId = id,
                 EaseFactor = 2.5,
-                IntervalDays = 0,
+                Interval = 0,
                 Repetitions = 0,
                 DueDateUtc = DateTime.UtcNow
             };
             _db.FlashcardProgress.Add(progress);
         }
 
-        var (ef, reps, interval) = Srs.Apply(grade, progress.EaseFactor, progress.Repetitions, progress.IntervalDays);
+        var (ef, reps, interval) = Srs.Apply(
+            grade,
+            progress.EaseFactor,
+            progress.Repetitions,
+            progress.Interval);
+
         progress.EaseFactor = ef;
         progress.Repetitions = reps;
-        progress.IntervalDays = interval;
+        progress.Interval = interval;
         progress.LastReviewedUtc = DateTime.UtcNow;
         progress.DueDateUtc = DateTime.UtcNow.AddDays(interval);
 
@@ -117,25 +128,36 @@ public class FlashcardsController : Controller
 
     public async Task<IActionResult> Random(int deckId)
     {
-        var ids = await _db.Flashcards.Where(f => f.DeckId == deckId).Select(f => f.Id).ToListAsync();
-        if (ids.Count == 0) return RedirectToAction(nameof(Index), new { deckId });
+        var ids = await _db.Flashcards
+            .Where(f => f.DeckId == deckId)
+            .Select(f => f.Id)
+            .ToListAsync();
+
+        if (ids.Count == 0)
+            return RedirectToAction(nameof(Index), new { deckId });
 
         var pickId = ids[new Random().Next(ids.Count)];
-        var card = await _db.Flashcards.Include(f => f.Deck).FirstOrDefaultAsync(f => f.Id == pickId);
-        if (card == null) return RedirectToAction(nameof(Index), new { deckId });
+        var card = await _db.Flashcards
+            .Include(f => f.Deck)
+            .FirstOrDefaultAsync(f => f.Id == pickId);
+
+        if (card == null)
+            return RedirectToAction(nameof(Index), new { deckId });
+
         return View(card);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     public async Task<IActionResult> Create(int deckId)
     {
         var deck = await _db.Decks.FindAsync(deckId);
         if (deck == null) return NotFound();
+
         ViewData["Deck"] = deck;
         return View(new Flashcard { DeckId = deckId });
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     [HttpPost]
     public async Task<IActionResult> Create(Flashcard card, IFormFile? imageFile, IFormFile? audioFile)
     {
@@ -145,62 +167,77 @@ public class FlashcardsController : Controller
 
         _db.Flashcards.Add(card);
         await _db.SaveChangesAsync();
+
         return RedirectToAction(nameof(Index), new { deckId = card.DeckId });
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     public async Task<IActionResult> Edit(int id)
     {
         var card = await _db.Flashcards.FindAsync(id);
         if (card == null) return NotFound();
+
         return View(card);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     [HttpPost]
     public async Task<IActionResult> Edit(Flashcard card, IFormFile? imageFile, IFormFile? audioFile)
     {
         if (!ModelState.IsValid) return View(card);
 
-        await SaveMediaAsync(card, imageFile, audioFile, isEdit:true);
+        await SaveMediaAsync(card, imageFile, audioFile);
 
         _db.Flashcards.Update(card);
         await _db.SaveChangesAsync();
+
         return RedirectToAction(nameof(Index), new { deckId = card.DeckId });
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     public async Task<IActionResult> Delete(int id)
     {
-        var card = await _db.Flashcards.Include(f => f.Deck).FirstOrDefaultAsync(f => f.Id == id);
+        var card = await _db.Flashcards
+            .Include(f => f.Deck)
+            .FirstOrDefaultAsync(f => f.Id == id);
+
         if (card == null) return NotFound();
         return View(card);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     [HttpPost, ActionName("Delete")]
     public async Task<IActionResult> ConfirmDelete(int id)
     {
         var card = await _db.Flashcards.FindAsync(id);
         if (card == null) return NotFound();
+
         var deckId = card.DeckId;
         _db.Flashcards.Remove(card);
         await _db.SaveChangesAsync();
+
         return RedirectToAction(nameof(Index), new { deckId });
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     public async Task<IActionResult> Export(int deckId)
     {
-        var cards = await _db.Flashcards.Where(f => f.DeckId == deckId).OrderBy(f => f.Id).ToListAsync();
-        var json = JsonSerializer.Serialize(cards.Select(c => new {
-            c.Question, c.Answer, c.Category, c.Tags
-        }), new JsonSerializerOptions { WriteIndented = true });
+        var cards = await _db.Flashcards
+            .Where(f => f.DeckId == deckId)
+            .OrderBy(f => f.Id)
+            .ToListAsync();
 
-        return File(System.Text.Encoding.UTF8.GetBytes(json), "application/json", $"deck-{deckId}-flashcards.json");
+        var json = JsonSerializer.Serialize(
+            cards.Select(c => new { c.Question, c.Answer, c.Category, c.Tags }),
+            new JsonSerializerOptions { WriteIndented = true });
+
+        return File(
+            System.Text.Encoding.UTF8.GetBytes(json),
+            "application/json",
+            $"deck-{deckId}-flashcards.json");
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     [HttpGet]
     public IActionResult Import(int deckId)
     {
@@ -208,7 +245,7 @@ public class FlashcardsController : Controller
         return View();
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "WriteAccess")]
     [HttpPost]
     public async Task<IActionResult> Import(int deckId, IFormFile file)
     {
@@ -224,18 +261,21 @@ public class FlashcardsController : Controller
 
         try
         {
-            var items = JsonSerializer.Deserialize<List<ImportCard>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-            foreach (var i in items)
+            var items = JsonSerializer.Deserialize<List<SeedImportCard>>(json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+            foreach (var item in items)
             {
                 _db.Flashcards.Add(new Flashcard
                 {
                     DeckId = deckId,
-                    Question = i.Question ?? "",
-                    Answer = i.Answer ?? "",
-                    Category = i.Category ?? "",
-                    Tags = i.Tags ?? ""
+                    Question = item.Question ?? "",
+                    Answer = item.Answer ?? "",
+                    Category = item.Category ?? "",
+                    Tags = item.Tags ?? ""
                 });
             }
+
             await _db.SaveChangesAsync();
             return RedirectToAction(nameof(Index), new { deckId });
         }
@@ -247,7 +287,7 @@ public class FlashcardsController : Controller
         }
     }
 
-    private async Task SaveMediaAsync(Flashcard card, IFormFile? imageFile, IFormFile? audioFile, bool isEdit=false)
+    private async Task SaveMediaAsync(Flashcard card, IFormFile? imageFile, IFormFile? audioFile)
     {
         var uploads = Path.Combine(_env.WebRootPath, "uploads");
         Directory.CreateDirectory(uploads);
@@ -273,6 +313,13 @@ public class FlashcardsController : Controller
 
     private async Task UpdateUserStatsAsync(string userId, bool correct, int grade)
     {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return;
+
+        var roles = await _userManager.GetRolesAsync(user);
+        if (roles.Contains("Guest"))
+            return;
+
         var stats = await _db.UserStats.FindAsync(userId);
         if (stats == null)
         {
@@ -283,14 +330,11 @@ public class FlashcardsController : Controller
         stats.TotalReviews += 1;
         if (correct) stats.CorrectReviews += 1;
 
-        // points
         stats.Points += correct ? (grade == 5 ? 15 : 10) : 1;
 
-        // streak
         var today = DateTime.UtcNow.Date;
         if (stats.LastReviewDateUtc?.Date == today)
         {
-            // no change
         }
         else if (stats.LastReviewDateUtc?.Date == today.AddDays(-1))
         {
@@ -305,13 +349,5 @@ public class FlashcardsController : Controller
             stats.LongestStreakDays = stats.CurrentStreakDays;
 
         stats.LastReviewDateUtc = DateTime.UtcNow;
-    }
-
-    private class ImportCard
-    {
-        public string? Question { get; set; }
-        public string? Answer { get; set; }
-        public string? Category { get; set; }
-        public string? Tags { get; set; }
     }
 }

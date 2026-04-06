@@ -1,67 +1,104 @@
-
 @model IEnumerable<FlashcardsPlatformFull.Models.Flashcard>
+
 @{
-  var deck = (FlashcardsPlatformFull.Models.Deck)ViewData["Deck"]!;
-  ViewData["Title"] = "Manage Cards";
+    var deck = (FlashcardsPlatformFull.Models.Deck)ViewData["Deck"]!;
+    ViewData["Title"] = "Cards";
 }
+
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h2 class="mb-0">Manage Cards</h2>
-    <div class="text-muted">Deck: <a asp-controller="Decks" asp-action="Details" asp-route-id="@deck.Id">@deck.Name</a></div>
-  </div>
-  <div class="d-flex gap-2">
-    <a class="btn btn-success" asp-action="Study" asp-route-deckId="@deck.Id">Study</a>
-    @if (User.IsInRole("Admin"))
-    {
-      <a class="btn btn-primary" asp-action="Create" asp-route-deckId="@deck.Id">Add Card</a>
-      <a class="btn btn-outline-secondary" asp-action="Import" asp-route-deckId="@deck.Id">Import</a>
-      <a class="btn btn-outline-secondary" asp-action="Export" asp-route-deckId="@deck.Id">Export</a>
-    }
-  </div>
+    <div>
+        <h2 class="mb-0">Cards</h2>
+        <div class="text-muted">
+            Deck:
+            <a asp-controller="Decks"
+               asp-action="Details"
+               asp-route-id="@deck.Id">@deck.Name</a>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-success"
+           asp-action="Study"
+           asp-route-deckId="@deck.Id">Study</a>
+
+        @if (User.IsInRole("Admin") || User.IsInRole("User"))
+        {
+            <a class="btn btn-primary"
+               asp-action="Create"
+               asp-route-deckId="@deck.Id">Add Card</a>
+
+            <a class="btn btn-outline-secondary"
+               asp-action="Import"
+               asp-route-deckId="@deck.Id">Import</a>
+
+            <a class="btn btn-outline-secondary"
+               asp-action="Export"
+               asp-route-deckId="@deck.Id">Export</a>
+        }
+    </div>
 </div>
 
 <div class="row">
-@foreach (var c in Model)
-{
-  <div class="col-md-6 mb-3">
-    <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <span class="badge bg-info text-dark">@(!string.IsNullOrWhiteSpace(c.Category) ? c.Category : "General")</span>
-          <small class="text-muted">@c.Tags</small>
+    @foreach (var card in Model)
+    {
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span class="badge bg-info text-dark">
+                            @(!string.IsNullOrWhiteSpace(card.Category) ? card.Category : "General")
+                        </span>
+                        <small class="text-muted">@card.Tags</small>
+                    </div>
+
+                    <h5 class="mt-2">@card.Question</h5>
+
+                    <div class="text-muted" id="a-@card.Id" style="display:none;">
+                        @card.Answer
+                    </div>
+
+                    <button class="btn btn-outline-secondary btn-sm mt-2"
+                            onclick="toggleAnswer(@card.Id)">
+                        Show/Hide
+                    </button>
+
+                    @if (!string.IsNullOrWhiteSpace(card.ImagePath))
+                    {
+                        <img class="img-fluid mt-2 rounded"
+                             style="max-height:200px;"
+                             src="@card.ImagePath" />
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(card.AudioPath))
+                    {
+                        <audio class="mt-2 w-100" controls>
+                            <source src="@card.AudioPath" />
+                        </audio>
+                    }
+
+                    @if (User.IsInRole("Admin") || User.IsInRole("User"))
+                    {
+                        <div class="mt-3 d-flex gap-2">
+                            <a class="btn btn-warning btn-sm"
+                               asp-action="Edit"
+                               asp-route-id="@card.Id">Edit</a>
+
+                            <a class="btn btn-danger btn-sm"
+                               asp-action="Delete"
+                               asp-route-id="@card.Id">Delete</a>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
-
-        <h5 class="mt-2">@c.Question</h5>
-        <div class="text-muted" id="a-@c.Id" style="display:none;">@c.Answer</div>
-        <button class="btn btn-outline-secondary btn-sm mt-2" onclick="toggle(@c.Id)">Show/Hide</button>
-
-        @if (!string.IsNullOrWhiteSpace(c.ImagePath))
-        {
-          <img class="img-fluid mt-2 rounded" style="max-height:200px;" src="@c.ImagePath" />
-        }
-        @if (!string.IsNullOrWhiteSpace(c.AudioPath))
-        {
-          <audio class="mt-2 w-100" controls>
-            <source src="@c.AudioPath" />
-          </audio>
-        }
-
-        @if (User.IsInRole("Admin"))
-        {
-          <div class="mt-3 d-flex gap-2">
-            <a class="btn btn-warning btn-sm" asp-action="Edit" asp-route-id="@c.Id">Edit</a>
-            <a class="btn btn-danger btn-sm" asp-action="Delete" asp-route-id="@c.Id">Delete</a>
-          </div>
-        }
-      </div>
-    </div>
-  </div>
-}
+    }
 </div>
 
 <script>
-  function toggle(id) {
-    const el = document.getElementById("a-" + id);
-    el.style.display = (el.style.display === "none" || el.style.display === "") ? "block" : "none";
-  }
+    function toggleAnswer(id) {
+        const el = document.getElementById("a-" + id);
+        el.style.display = (el.style.display === "none" || el.style.display === "")
+            ? "block"
+            : "none";
+    }
 </script>

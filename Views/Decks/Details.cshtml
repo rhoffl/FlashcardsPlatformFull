@@ -1,38 +1,76 @@
-
 @model FlashcardsPlatformFull.Models.Deck
+
 @{
-  ViewData["Title"] = "Deck";
+    ViewData["Title"] = "Deck Details";
 }
+
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h1 class="mb-1">@Model.Name</h1>
-    <div class="text-muted">@Model.Description</div>
-  </div>
-  <div class="d-flex gap-2">
-    <a class="btn btn-success" asp-controller="Flashcards" asp-action="Study" asp-route-deckId="@Model.Id">Study</a>
-    <a class="btn btn-outline-info" asp-controller="Flashcards" asp-action="Random" asp-route-deckId="@Model.Id">Random</a>
-    <a class="btn btn-outline-secondary" asp-controller="Flashcards" asp-action="Index" asp-route-deckId="@Model.Id">Manage</a>
-  </div>
+    <div>
+        <h1 class="mb-1">@Model.Name</h1>
+        <div class="text-muted">@Model.Description</div>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-success"
+           asp-controller="Flashcards"
+           asp-action="Study"
+           asp-route-deckId="@Model.Id">Study</a>
+
+        <a class="btn btn-outline-info"
+           asp-controller="Flashcards"
+           asp-action="Random"
+           asp-route-deckId="@Model.Id">Random</a>
+
+        <a class="btn btn-outline-secondary"
+           asp-controller="Flashcards"
+           asp-action="Index"
+           asp-route-deckId="@Model.Id">Browse Cards</a>
+    </div>
 </div>
 
 @if (User.IsInRole("Admin"))
 {
-  <div class="mb-3 d-flex gap-2">
-    <a class="btn btn-primary btn-sm" asp-controller="Flashcards" asp-action="Create" asp-route-deckId="@Model.Id">Add Card</a>
-    <a class="btn btn-outline-secondary btn-sm" asp-controller="Flashcards" asp-action="Import" asp-route-deckId="@Model.Id">Import JSON</a>
-    <a class="btn btn-outline-secondary btn-sm" asp-controller="Flashcards" asp-action="Export" asp-route-deckId="@Model.Id">Export JSON</a>
-  </div>
+    <div class="mb-3 d-flex gap-2 flex-wrap">
+        <a class="btn btn-primary btn-sm"
+           asp-controller="Flashcards"
+           asp-action="Create"
+           asp-route-deckId="@Model.Id">Add Card</a>
+
+        <a class="btn btn-outline-secondary btn-sm"
+           asp-controller="Flashcards"
+           asp-action="Import"
+           asp-route-deckId="@Model.Id">Import JSON</a>
+
+        <a class="btn btn-outline-secondary btn-sm"
+           asp-controller="Flashcards"
+           asp-action="Export"
+           asp-route-deckId="@Model.Id">Export JSON</a>
+
+        <form method="post"
+              asp-controller="DeckShare"
+              asp-action="CreateLink"
+              class="d-inline">
+            <input type="hidden" name="deckId" value="@Model.Id" />
+            <button class="btn btn-outline-primary btn-sm">Create Share Link</button>
+        </form>
+    </div>
 }
 
 <div class="card">
-  <div class="card-header">Cards</div>
-  <div class="list-group list-group-flush">
-    @foreach (var c in Model.Flashcards.OrderBy(x => x.Id))
-    {
-      <div class="list-group-item">
-        <div class="fw-semibold">@c.Question</div>
-        <div class="small text-muted">@c.Category @if(!string.IsNullOrWhiteSpace(c.Tags)){<span>• @c.Tags</span>}</div>
-      </div>
-    }
-  </div>
+    <div class="card-header">Cards</div>
+    <div class="list-group list-group-flush">
+        @foreach (var card in Model.Flashcards.OrderBy(x => x.Id))
+        {
+            <div class="list-group-item">
+                <div class="fw-semibold">@card.Question</div>
+                <div class="small text-muted">
+                    @card.Category
+                    @if (!string.IsNullOrWhiteSpace(card.Tags))
+                    {
+                        <span>• @card.Tags</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
 </div>

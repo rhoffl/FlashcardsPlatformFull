@@ -1,154 +1,210 @@
-
 @{
-  var deck = (FlashcardsPlatformFull.Models.Deck)ViewData["Deck"]!;
-  ViewData["Title"] = "Study";
+    var deck = (FlashcardsPlatformFull.Models.Deck)ViewData["Deck"]!;
+    ViewData["Title"] = "Study";
 }
+
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h2 class="mb-0">Study Mode</h2>
-    <div class="text-muted">Deck: <a asp-controller="Decks" asp-action="Details" asp-route-id="@deck.Id">@deck.Name</a></div>
-  </div>
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" asp-controller="Flashcards" asp-action="Index" asp-route-deckId="@deck.Id">Manage</a>
-  </div>
+    <div>
+        <h2 class="mb-0">Study Mode</h2>
+        <div class="text-muted">
+            Deck:
+            <a asp-controller="Decks"
+               asp-action="Details"
+               asp-route-id="@deck.Id">@deck.Name</a>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary"
+           asp-controller="Flashcards"
+           asp-action="Index"
+           asp-route-deckId="@deck.Id">Browse Cards</a>
+    </div>
 </div>
 
 @if (!(User?.Identity?.IsAuthenticated ?? false))
 {
-  <div class="alert alert-warning">
-    Please <a href="/Identity/Account/Login">log in</a> to track your SRS progress.
-  </div>
+    <div class="alert alert-warning">
+        Please <a href="/Identity/Account/Login">log in</a> or continue as Guest to track study progress.
+    </div>
 }
 
 <div id="study-container" class="d-flex flex-column align-items-center">
-  <div class="flip-card mb-3">
-    <div class="flip-card-inner" id="flip-inner">
-      <div class="flip-card-front d-flex flex-column justify-content-center">
-        <div class="small text-muted text-center" id="study-meta"></div>
-        <h3 id="study-question" class="text-center"></h3>
-        <div class="text-center mt-2">
-          <span class="badge bg-info text-dark" id="study-category"></span>
-          <span class="text-muted small ms-2" id="study-tags"></span>
+    <div class="flip-card mb-3">
+        <div class="flip-card-inner" id="flip-inner">
+            <div class="flip-card-front d-flex flex-column justify-content-center">
+                <div class="small text-muted text-center" id="study-meta"></div>
+                <h3 id="study-question" class="text-center"></h3>
+
+                <div class="text-center mt-2">
+                    <span class="badge bg-info text-dark" id="study-category"></span>
+                    <span class="text-muted small ms-2" id="study-tags"></span>
+                </div>
+
+                <img id="study-image"
+                     class="img-fluid mt-3 rounded"
+                     style="max-height:180px; display:none;" />
+            </div>
+
+            <div class="flip-card-back d-flex flex-column justify-content-center">
+                <h4 class="text-center">Answer</h4>
+                <p id="study-answer" class="text-center"></p>
+
+                <audio id="study-audio"
+                       class="mt-2 w-100"
+                       controls
+                       style="display:none;">
+                    <source id="study-audio-src" />
+                </audio>
+            </div>
         </div>
-        <img id="study-image" class="img-fluid mt-3 rounded" style="max-height:180px; display:none;" />
-      </div>
-      <div class="flip-card-back d-flex flex-column justify-content-center">
-        <h4 class="text-center">Answer</h4>
-        <p id="study-answer" class="text-center"></p>
-        <audio id="study-audio" class="mt-2 w-100" controls style="display:none;">
-          <source id="study-audio-src" />
-        </audio>
-      </div>
     </div>
-  </div>
 
-  <div class="mb-3 d-flex flex-wrap justify-content-center gap-2">
-    <button id="btn-prev" class="btn btn-outline-secondary">Previous</button>
-    <button id="btn-next" class="btn btn-outline-secondary">Next</button>
-    <button id="btn-flip" class="btn btn-primary">Flip</button>
-  </div>
+    <div class="mb-3 d-flex flex-wrap justify-content-center gap-2">
+        <button id="btn-prev" class="btn btn-outline-secondary">Previous</button>
+        <button id="btn-next" class="btn btn-outline-secondary">Next</button>
+        <button id="btn-flip" class="btn btn-primary">Flip</button>
+    </div>
 
-  @if (User?.Identity?.IsAuthenticated ?? false)
-  {
-    <form id="srs-form" method="post" class="d-flex flex-wrap justify-content-center gap-2">
-      <input type="hidden" name="deckId" value="@deck.Id" />
-      <input type="hidden" id="srs-card-id" name="id" />
-      <button formaction="/Flashcards/Review?grade=1" class="btn btn-danger">Again</button>
-      <button formaction="/Flashcards/Review?grade=2" class="btn btn-warning">Hard</button>
-      <button formaction="/Flashcards/Review?grade=3" class="btn btn-info">Good</button>
-      <button formaction="/Flashcards/Review?grade=5" class="btn btn-success">Easy</button>
-    </form>
-  }
+    @if (User?.Identity?.IsAuthenticated ?? false)
+    {
+        <form id="srs-form" method="post" class="d-flex flex-wrap justify-content-center gap-2">
+            <input type="hidden" name="deckId" value="@deck.Id" />
+            <input type="hidden" id="srs-card-id" name="id" />
+
+            <button formaction="/Flashcards/Review?grade=1" class="btn btn-danger">Again</button>
+            <button formaction="/Flashcards/Review?grade=2" class="btn btn-warning">Hard</button>
+            <button formaction="/Flashcards/Review?grade=3" class="btn btn-info">Good</button>
+            <button formaction="/Flashcards/Review?grade=5" class="btn btn-success">Easy</button>
+        </form>
+    }
 </div>
 
 <style>
-.flip-card { background: transparent; width: 520px; max-width: 95vw; height: 320px; perspective: 1000px; }
-.flip-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
-.flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
-.flip-card-front, .flip-card-back {
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
-  border-radius: 0.75rem;
-  position: absolute; width: 100%; height: 100%;
-  backface-visibility: hidden;
-  padding: 20px;
-  background: var(--card-bg, #fff);
+.flip-card {
+    background: transparent;
+    width: 520px;
+    max-width: 95vw;
+    height: 320px;
+    perspective: 1000px;
 }
-.flip-card-back { background: #0d6efd; color: #fff; transform: rotateY(180deg); }
+.flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+.flip-card.flipped .flip-card-inner {
+    transform: rotateY(180deg);
+}
+.flip-card-front, .flip-card-back {
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+    border-radius: 0.75rem;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    padding: 20px;
+    background: var(--card-bg, #fff);
+}
+.flip-card-back {
+    background: #0d6efd;
+    color: #fff;
+    transform: rotateY(180deg);
+}
 </style>
 
 @section Scripts {
 <script>
 (function () {
-  const deckId = @deck.Id;
-  const flipCard = document.querySelector(".flip-card");
-  const q = document.getElementById("study-question");
-  const a = document.getElementById("study-answer");
-  const cat = document.getElementById("study-category");
-  const tags = document.getElementById("study-tags");
-  const meta = document.getElementById("study-meta");
-  const img = document.getElementById("study-image");
-  const audio = document.getElementById("study-audio");
-  const audioSrc = document.getElementById("study-audio-src");
-  const hiddenId = document.getElementById("srs-card-id");
+    const deckId = @deck.Id;
+    const flipCard = document.querySelector(".flip-card");
+    const q = document.getElementById("study-question");
+    const a = document.getElementById("study-answer");
+    const cat = document.getElementById("study-category");
+    const tags = document.getElementById("study-tags");
+    const meta = document.getElementById("study-meta");
+    const img = document.getElementById("study-image");
+    const audio = document.getElementById("study-audio");
+    const audioSrc = document.getElementById("study-audio-src");
+    const hiddenId = document.getElementById("srs-card-id");
 
-  let cards = [];
-  let idx = 0;
+    let cards = [];
+    let idx = 0;
 
-  function render() {
-    if (!cards.length) return;
-    const c = cards[idx];
-    q.textContent = c.question;
-    a.textContent = c.answer;
-    cat.textContent = c.category || "General";
-    tags.textContent = c.tags || "";
-    meta.textContent = `Card ${idx + 1} of ${cards.length}`;
+    function render() {
+        if (!cards.length) return;
 
-    if (hiddenId) hiddenId.value = c.id;
+        const c = cards[idx];
+        q.textContent = c.question;
+        a.textContent = c.answer;
+        cat.textContent = c.category || "General";
+        tags.textContent = c.tags || "";
+        meta.textContent = `Card ${idx + 1} of ${cards.length}`;
 
-    if (c.imagePath) { img.src = c.imagePath; img.style.display = "block"; }
-    else { img.style.display = "none"; }
+        if (hiddenId) hiddenId.value = c.id;
 
-    if (c.audioPath) {
-      audioSrc.src = c.audioPath;
-      audio.load();
-      audio.style.display = "block";
-    } else {
-      audio.style.display = "none";
+        if (c.imagePath) {
+            img.src = c.imagePath;
+            img.style.display = "block";
+        } else {
+            img.style.display = "none";
+        }
+
+        if (c.audioPath) {
+            audioSrc.src = c.audioPath;
+            audio.load();
+            audio.style.display = "block";
+        } else {
+            audio.style.display = "none";
+        }
+
+        flipCard.classList.remove("flipped");
     }
 
-    flipCard.classList.remove("flipped");
-  }
+    function next() {
+        if (!cards.length) return;
+        idx = (idx + 1) % cards.length;
+        render();
+    }
 
-  function next() { if (!cards.length) return; idx = (idx + 1) % cards.length; render(); }
-  function prev() { if (!cards.length) return; idx = (idx - 1 + cards.length) % cards.length; render(); }
-  function flip() { flipCard.classList.toggle("flipped"); }
+    function prev() {
+        if (!cards.length) return;
+        idx = (idx - 1 + cards.length) % cards.length;
+        render();
+    }
 
-  document.getElementById("btn-next").addEventListener("click", next);
-  document.getElementById("btn-prev").addEventListener("click", prev);
-  document.getElementById("btn-flip").addEventListener("click", flip);
+    function flip() {
+        flipCard.classList.toggle("flipped");
+    }
 
-  fetch(`/Flashcards/DueJson?deckId=${deckId}`)
-    .then(r => {
-      if (!r.ok) throw new Error("Failed to load due cards");
-      return r.json();
-    })
-    .then(data => {
-      cards = data;
-      if (!cards.length) {
-        meta.textContent = "🎉 No cards due right now!";
-        q.textContent = "You're all caught up.";
-        a.textContent = "Come back later.";
-        cat.textContent = "";
-        tags.textContent = "";
-        return;
-      }
-      idx = 0;
-      render();
-    })
-    .catch(err => {
-      meta.textContent = "Error loading cards.";
-      q.textContent = err.message;
-    });
+    document.getElementById("btn-next").addEventListener("click", next);
+    document.getElementById("btn-prev").addEventListener("click", prev);
+    document.getElementById("btn-flip").addEventListener("click", flip);
+
+    fetch(`/Flashcards/DueJson?deckId=${deckId}`)
+        .then(r => {
+            if (!r.ok) throw new Error("Failed to load due cards");
+            return r.json();
+        })
+        .then(data => {
+            cards = data;
+            if (!cards.length) {
+                meta.textContent = "No cards due right now.";
+                q.textContent = "You're all caught up.";
+                a.textContent = "Come back later.";
+                cat.textContent = "";
+                tags.textContent = "";
+                return;
+            }
+            idx = 0;
+            render();
+        })
+        .catch(err => {
+            meta.textContent = "Error loading cards.";
+            q.textContent = err.message;
+        });
 })();
 </script>
 }

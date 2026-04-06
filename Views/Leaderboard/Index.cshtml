@@ -1,37 +1,44 @@
-
 @model IEnumerable<FlashcardsPlatformFull.Models.UserStats>
+
 @{
-  ViewData["Title"] = "Leaderboard";
+    ViewData["Title"] = "Leaderboard";
 }
+
 <h2>Leaderboard</h2>
+
 <table class="table table-striped">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>User</th>
-      <th>Points</th>
-      <th>Total Reviews</th>
-      <th>Accuracy</th>
-      <th>Streak</th>
-    </tr>
-  </thead>
-  <tbody>
-    @{
-      var rank = 1;
-    }
-    @foreach (var s in Model)
-    {
-      var name = s.User.DisplayName ?? s.User.UserName ?? "user";
-      var acc = s.TotalReviews > 0 ? (100.0 * s.CorrectReviews / s.TotalReviews) : 0.0;
-      <tr>
-        <td>@rank</td>
-        <td>@name</td>
-        <td>@s.Points</td>
-        <td>@s.TotalReviews</td>
-        <td>@acc.ToString("0.0")%</td>
-        <td>@s.CurrentStreakDays</td>
-      </tr>
-      rank++;
-    }
-  </tbody>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>User</th>
+            <th>Points</th>
+            <th>Total Reviews</th>
+            <th>Accuracy</th>
+            <th>Streak</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var rank = 1;
+        }
+
+        @foreach (var stat in Model)
+        {
+            var name = stat.User.DisplayName ?? stat.User.UserName ?? "user";
+            var accuracy = stat.TotalReviews > 0
+                ? (100.0 * stat.CorrectReviews / stat.TotalReviews)
+                : 0.0;
+
+            <tr>
+                <td>@rank</td>
+                <td>@name</td>
+                <td>@stat.Points</td>
+                <td>@stat.TotalReviews</td>
+                <td>@accuracy.ToString("0.0")%</td>
+                <td>@stat.CurrentStreakDays</td>
+            </tr>
+
+            rank++;
+        }
+    </tbody>
 </table>
